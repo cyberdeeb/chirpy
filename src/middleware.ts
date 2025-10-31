@@ -1,17 +1,15 @@
-import { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 
-export function middlewareLogResponses(
+export function middlewareLogResponse(
   req: Request,
   res: Response,
-  next: () => void
+  next: NextFunction
 ) {
   res.on('finish', () => {
-    const status_code = res.statusCode;
+    const statusCode = res.statusCode;
 
-    if (status_code !== 200) {
-      console.log(
-        `[NON-OK] ${req.method} ${req.originalUrl} - Status: ${status_code}`
-      );
+    if (statusCode >= 300) {
+      console.log(`[NON-OK] ${req.method} ${req.url} - Status: ${statusCode}`);
     }
   });
 
