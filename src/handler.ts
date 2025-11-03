@@ -22,3 +22,31 @@ export function handlerReset(req: Request, res: Response) {
   res.set({ 'Content-Type': 'text/plain', charset: 'utf-8' });
   res.status(200).send('Hits reset to 0');
 }
+
+export function handlerValidateChirp(req: Request, res: Response) {
+  type responseBody = {
+    valid?: boolean;
+    error?: string;
+  };
+
+  const { body } = req.body;
+
+  if (!body || typeof body !== 'string') {
+    const response: responseBody = {
+      error: 'Missing data field',
+    };
+    res.status(400).json(response);
+    return;
+  }
+
+  if (body.length > 140) {
+    const response: responseBody = {
+      error: 'Chirp is too long',
+    };
+    res.status(400).json(response);
+    return;
+  }
+
+  const response: responseBody = { valid: true };
+  res.status(200).json(response);
+}
