@@ -25,9 +25,11 @@ export function handlerReset(req: Request, res: Response) {
 
 export function handlerValidateChirp(req: Request, res: Response) {
   type responseBody = {
-    valid?: boolean;
+    cleanedBody?: string;
     error?: string;
   };
+
+  const profane = ['kerfuffle', 'sharbert', 'fornax'];
 
   const { body } = req.body;
 
@@ -47,6 +49,15 @@ export function handlerValidateChirp(req: Request, res: Response) {
     return;
   }
 
-  const response: responseBody = { valid: true };
+  let updatedBody = '';
+  for (const word of body.split(/\s+/)) {
+    if (profane.includes(word.toLowerCase())) {
+      updatedBody += '**** ';
+    } else {
+      updatedBody += word + ' ';
+    }
+  }
+
+  const response: responseBody = { cleanedBody: updatedBody.trim() };
   res.status(200).json(response);
 }
