@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { config } from './config.js';
 
-export function handlerReadiness(req: Request, res: Response) {
+export async function handlerReadiness(req: Request, res: Response) {
   res.set({ 'Content-Type': 'text/plain', charset: 'utf-8' });
   res.status(200).send('OK');
 }
@@ -17,13 +17,13 @@ export async function handlerMetrics(req: Request, res: Response) {
 `);
 }
 
-export function handlerReset(req: Request, res: Response) {
+export async function handlerReset(req: Request, res: Response) {
   config.fileServerHits = 0;
   res.set({ 'Content-Type': 'text/plain', charset: 'utf-8' });
   res.status(200).send('Hits reset to 0');
 }
 
-export function handlerValidateChirp(req: Request, res: Response) {
+export async function handlerValidateChirp(req: Request, res: Response) {
   type responseBody = {
     cleanedBody?: string;
     error?: string;
@@ -41,9 +41,11 @@ export function handlerValidateChirp(req: Request, res: Response) {
     return;
   }
 
-  if (body.length > 140) {
+  const maxLength = 140;
+
+  if (body.length > maxLength) {
     const response: responseBody = {
-      error: 'Chirp is too long',
+      error: `Chirp is too long. Max length is ${maxLength}`,
     };
     res.status(400).json(response);
     return;
