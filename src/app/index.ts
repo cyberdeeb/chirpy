@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  handlerCreateUser,
   handlerMetrics,
   handlerReadiness,
   handlerReset,
@@ -30,6 +31,10 @@ app.post('/admin/reset', (req, res, next) => {
 
 app.post('/api/validate_chirp', (req, res, next) => {
   Promise.resolve(handlerValidateChirp(req, res)).catch(next);
+});
+
+app.post('/api/users', (req, res, next) => {
+  Promise.resolve(handlerCreateUser(req, res)).catch(next);
 });
 
 app.use(middlewareErrorHandler);

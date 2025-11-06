@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { config } from './config.js';
+import { createUser, deleteAllUsers } from './db/queries/users.js';
 
 export async function handlerReadiness(req: Request, res: Response) {
   res.set({ 'Content-Type': 'text/plain', charset: 'utf-8' });
@@ -18,7 +19,12 @@ export async function handlerMetrics(req: Request, res: Response) {
 }
 
 export async function handlerReset(req: Request, res: Response) {
+  if (config.api.platform !== 'development') {
+    res.status(403).send('Reset is only allowed in development platform');
+    return;
+  }
   config.api.fileServerHits = 0;
+  await deleteAllUsers();
   res.set({ 'Content-Type': 'text/plain', charset: 'utf-8' });
   res.status(200).send('Hits reset to 0');
 }
@@ -62,4 +68,21 @@ export async function handlerValidateChirp(req: Request, res: Response) {
 
   const response: responseBody = { cleanedBody: updatedBody.trim() };
   res.status(200).json(response);
+}
+
+export async function handlerCreateUser(req: Request, res: Response) {
+  try {
+    const { email } = req.body;
+
+    const newUser = await createUser({ email });
+
+    res.status(201).json({
+      id: newUser.id,
+      createdAt: newUser.createdAt,
+      updatedAt: newUser.updatedAt,
+      email: newUser.email,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create user' });
+  }
 }
