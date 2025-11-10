@@ -4,7 +4,7 @@ import {
   handlerMetrics,
   handlerReadiness,
   handlerReset,
-  handlerValidateChirp,
+  handlerChirp,
 } from '../handler.js';
 import {
   middlewareErrorHandler,
@@ -29,8 +29,8 @@ app.post('/admin/reset', (req, res, next) => {
   Promise.resolve(handlerReset(req, res)).catch(next);
 });
 
-app.post('/api/validate_chirp', (req, res, next) => {
-  Promise.resolve(handlerValidateChirp(req, res)).catch(next);
+app.post('/api/chirps', (req, res, next) => {
+  Promise.resolve(handlerChirp(req, res)).catch(next);
 });
 
 app.post('/api/users', (req, res, next) => {

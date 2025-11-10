@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { config } from './config.js';
 import { createUser, deleteAllUsers } from './db/queries/users.js';
+import { createChirp } from './db/queries/chirps.js';
 
 export async function handlerReadiness(req: Request, res: Response) {
   res.set({ 'Content-Type': 'text/plain', charset: 'utf-8' });
@@ -29,7 +30,7 @@ export async function handlerReset(req: Request, res: Response) {
   res.status(200).send('Hits reset to 0');
 }
 
-export async function handlerValidateChirp(req: Request, res: Response) {
+export async function handlerChirp(req: Request, res: Response) {
   type responseBody = {
     cleanedBody?: string;
     error?: string;
@@ -38,6 +39,7 @@ export async function handlerValidateChirp(req: Request, res: Response) {
   const profane = ['kerfuffle', 'sharbert', 'fornax'];
 
   const { body } = req.body;
+  const { userId } = req.body;
 
   if (!body || typeof body !== 'string') {
     const response: responseBody = {
@@ -66,8 +68,15 @@ export async function handlerValidateChirp(req: Request, res: Response) {
     }
   }
 
-  const response: responseBody = { cleanedBody: updatedBody.trim() };
-  res.status(200).json(response);
+  const newChirp = await createChirp({ body: updatedBody.trim(), userId });
+
+  res.status(201).json({
+    id: newChirp.id,
+    createdAt: newChirp.createdAt,
+    updatedAt: newChirp.updatedAt,
+    body: newChirp.body,
+    userId: newChirp.userId,
+  });
 }
 
 export async function handlerCreateUser(req: Request, res: Response) {
