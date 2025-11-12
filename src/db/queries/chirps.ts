@@ -6,6 +6,10 @@ export async function createChirp(chirp: NewChirp) {
   return newChirp;
 }
 
+export async function getAllChirps() {
+  return await db.select().from(chirps).orderBy(chirps.createdAt);
+}
+
 export async function deleteAllChirps() {
   await db.delete(chirps);
 }

@@ -1,13 +1,26 @@
 import { Request, Response } from 'express';
 import { config } from './config.js';
 import { createUser, deleteAllUsers } from './db/queries/users.js';
-import { createChirp } from './db/queries/chirps.js';
+import { createChirp, getAllChirps } from './db/queries/chirps.js';
 
+// ============================================================================
+// HEALTH & MONITORING HANDLERS
+// ============================================================================
+// These handlers provide system health checks and monitoring capabilities
+
+/**
+ * Health check endpoint - returns OK status
+ * Used for monitoring service availability
+ */
 export async function handlerReadiness(req: Request, res: Response) {
   res.set({ 'Content-Type': 'text/plain', charset: 'utf-8' });
   res.status(200).send('OK');
 }
 
+/**
+ * Metrics dashboard - shows usage statistics
+ * Returns HTML page with file server hit count
+ */
 export async function handlerMetrics(req: Request, res: Response) {
   res.set('Content-Type', 'text/html; charset=utf-8');
   res.send(`<html>
@@ -19,6 +32,15 @@ export async function handlerMetrics(req: Request, res: Response) {
 `);
 }
 
+// ============================================================================
+// ADMIN HANDLERS
+// ============================================================================
+// Administrative functions - restricted to development environment
+
+/**
+ * Reset application state - development only
+ * Resets hit counter and clears all users from database
+ */
 export async function handlerReset(req: Request, res: Response) {
   if (config.api.platform !== 'development') {
     res.status(403).send('Reset is only allowed in development platform');
@@ -30,6 +52,15 @@ export async function handlerReset(req: Request, res: Response) {
   res.status(200).send('Hits reset to 0');
 }
 
+// ============================================================================
+// CHIRP HANDLERS
+// ============================================================================
+// Core chirp functionality - creating and retrieving chirps
+
+/**
+ * Create new chirp with profanity filtering
+ * Validates length, filters profane words, and saves to database
+ */
 export async function handlerChirp(req: Request, res: Response) {
   type responseBody = {
     cleanedBody?: string;
@@ -79,6 +110,24 @@ export async function handlerChirp(req: Request, res: Response) {
   });
 }
 
+/**
+ * Retrieve all chirps from database
+ * Returns array of all chirp objects
+ */
+export async function handlerGetAllChirps(req: Request, res: Response) {
+  const chirps = await getAllChirps();
+  res.status(200).json(chirps);
+}
+
+// ============================================================================
+// USER HANDLERS
+// ============================================================================
+// User management functionality - creating and managing user accounts
+
+/**
+ * Create new user account
+ * Accepts email and returns user object with generated ID
+ */
 export async function handlerCreateUser(req: Request, res: Response) {
   try {
     const { email } = req.body;
