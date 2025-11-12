@@ -1,7 +1,11 @@
 import { Request, Response } from 'express';
 import { config } from './config.js';
 import { createUser, deleteAllUsers } from './db/queries/users.js';
-import { createChirp, getAllChirps } from './db/queries/chirps.js';
+import {
+  createChirp,
+  getAllChirps,
+  getChirpById,
+} from './db/queries/chirps.js';
 
 // ============================================================================
 // HEALTH & MONITORING HANDLERS
@@ -117,6 +121,21 @@ export async function handlerChirp(req: Request, res: Response) {
 export async function handlerGetAllChirps(req: Request, res: Response) {
   const chirps = await getAllChirps();
   res.status(200).json(chirps);
+}
+
+/**
+ * Retrieve a specific chirp by its ID
+ * Extracts ID from URL parameters and fetches from database
+ * Returns 404 if chirp doesn't exist, otherwise returns chirp object
+ */
+export async function handlerGetChirpById(req: Request, res: Response) {
+  const { id } = req.params;
+  const chirp = await getChirpById(id);
+  if (!chirp) {
+    res.status(404).json({ error: 'Chirp not found' });
+    return;
+  }
+  res.status(200).json(chirp);
 }
 
 // ============================================================================

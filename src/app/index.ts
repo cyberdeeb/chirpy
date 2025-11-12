@@ -12,6 +12,7 @@ import {
   handlerReset,
   handlerChirp,
   handlerGetAllChirps,
+  handlerGetChirpById,
 } from '../handler.js';
 import {
   middlewareErrorHandler,
@@ -82,6 +83,15 @@ app.post('/admin/reset', (req, res, next) => {
  */
 app.get('/api/chirps', (req, res, next) => {
   Promise.resolve(handlerGetAllChirps(req, res)).catch(next);
+});
+
+/**
+ * GET /api/chirps/:id - Retrieve a specific chirp by ID
+ * Params: { id: string } - UUID of the chirp to retrieve
+ * Returns: 200 OK with chirp object, or 404 if not found
+ */
+app.get('/api/chirps/:id', (req, res, next) => {
+  Promise.resolve(handlerGetChirpById(req, res)).catch(next);
 });
 
 /**
