@@ -7,6 +7,7 @@
 import express from 'express';
 import {
   handlerCreateUser,
+  handlerLoginUser,
   handlerMetrics,
   handlerReadiness,
   handlerReset,
@@ -114,6 +115,15 @@ app.post('/api/chirps', (req, res, next) => {
  */
 app.post('/api/users', (req, res, next) => {
   Promise.resolve(handlerCreateUser(req, res)).catch(next);
+});
+
+/**
+ * POST /api/login - Authenticate user login
+ * Body: { email: string, password: string }
+ * Returns: 200 OK with user object, or 401 Unauthorized
+ */
+app.post('/api/login', (req, res, next) => {
+  Promise.resolve(handlerLoginUser(req, res)).catch(next);
 });
 
 // ============================================================================

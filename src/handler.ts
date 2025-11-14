@@ -1,6 +1,11 @@
 import { Request, Response } from 'express';
 import { config } from './config.js';
-import { createUser, deleteAllUsers } from './db/queries/users.js';
+import { hashPassword, checkPasswordHash } from './auth.js';
+import {
+  createUser,
+  deleteAllUsers,
+  getUserByEmail,
+} from './db/queries/users.js';
 import {
   createChirp,
   getAllChirps,
@@ -150,8 +155,11 @@ export async function handlerGetChirpById(req: Request, res: Response) {
 export async function handlerCreateUser(req: Request, res: Response) {
   try {
     const { email } = req.body;
+    const { password } = req.body;
 
-    const newUser = await createUser({ email });
+    const hashedPassword = await hashPassword(password);
+
+    const newUser = await createUser({ email, hashedPassword });
 
     res.status(201).json({
       id: newUser.id,
@@ -161,5 +169,35 @@ export async function handlerCreateUser(req: Request, res: Response) {
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create user' });
+  }
+}
+
+export async function handlerLoginUser(req: Request, res: Response) {
+  try {
+    const { email, password } = req.body;
+
+    const user = await getUserByEmail(email);
+    if (!user) {
+      res.status(401).json({ error: 'Invalid email or password' });
+      return;
+    }
+
+    const passwordMatch = await checkPasswordHash(
+      password,
+      user.hashedPassword
+    );
+    if (!passwordMatch) {
+      res.status(401).json({ error: 'Invalid email or password' });
+      return;
+    }
+
+    res.status(200).json({
+      id: user.id,
+      createdAt: user.createdAt,
+      updatedAt: user.updatedAt,
+      email: user.email,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to login user' });
   }
 }
