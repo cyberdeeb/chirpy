@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { config } from './config.js';
-import { hashPassword, checkPasswordHash } from './auth.js';
+import { hashPassword, checkPasswordHash } from './auth/auth.js';
 import {
   createUser,
   deleteAllUsers,
