@@ -1,6 +1,7 @@
 import * as argon2 from 'argon2';
 import { JwtPayload } from 'jsonwebtoken';
-import * as jwt from 'jsonwebtoken';
+import jwt from 'jsonwebtoken';
+import { Request } from 'express';
 
 export async function hashPassword(password: string): Promise<string> {
   const hashed = await argon2.hash(password);
@@ -38,4 +39,18 @@ export function validateJWT(token: string, secret: string): JwtPayload | null {
   } catch (err) {
     return null;
   }
+}
+
+export function getBearerToken(req: Request): string {
+  const authHeader = req.get('Authorization');
+  if (!authHeader) {
+    return '';
+  }
+
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer') {
+    return '';
+  }
+
+  return parts[1];
 }

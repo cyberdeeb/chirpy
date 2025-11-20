@@ -4,6 +4,7 @@ import {
   validateJWT,
   hashPassword,
   checkPasswordHash,
+  getBearerToken,
 } from './auth.js';
 
 describe('Password Hashing', () => {
@@ -126,5 +127,93 @@ describe('JWT Creation and Validation', () => {
     const longDecoded = validateJWT(longToken, secret);
 
     expect(shortDecoded?.exp).toBeLessThan(longDecoded?.exp!);
+  });
+});
+
+describe('Bearer Token Extraction', () => {
+  // Mock Express Request object
+  const mockRequest = (authHeader?: string) =>
+    ({
+      get: (headerName: string) => {
+        if (headerName.toLowerCase() === 'authorization') {
+          return authHeader;
+        }
+        return undefined;
+      },
+    } as any);
+
+  it('should extract valid bearer token', () => {
+    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test.token';
+    const req = mockRequest(`Bearer ${token}`);
+
+    const result = getBearerToken(req);
+    expect(result).toBe(token);
+  });
+
+  it('should return empty string when no authorization header', () => {
+    const req = mockRequest();
+
+    const result = getBearerToken(req);
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when authorization header is empty', () => {
+    const req = mockRequest('');
+
+    const result = getBearerToken(req);
+    expect(result).toBe('');
+  });
+
+  it('should return empty string for malformed authorization header', () => {
+    const req = mockRequest('InvalidFormat');
+
+    const result = getBearerToken(req);
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when not Bearer type', () => {
+    const req = mockRequest('Basic dXNlcjpwYXNzd29yZA==');
+
+    const result = getBearerToken(req);
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when Bearer has no token', () => {
+    const req = mockRequest('Bearer');
+
+    const result = getBearerToken(req);
+    expect(result).toBe('');
+  });
+
+  it('should return empty string when Bearer has empty token', () => {
+    const req = mockRequest('Bearer ');
+
+    const result = getBearerToken(req);
+    expect(result).toBe('');
+  });
+
+  it('should handle Bearer with extra spaces', () => {
+    const token = 'valid.jwt.token';
+    const req = mockRequest(`Bearer  ${token}`); // Extra space
+
+    const result = getBearerToken(req);
+    expect(result).toBe(''); // Should fail due to split length !== 2
+  });
+
+  it('should handle case-sensitive Bearer', () => {
+    const token = 'valid.jwt.token';
+    const req = mockRequest(`bearer ${token}`); // lowercase
+
+    const result = getBearerToken(req);
+    expect(result).toBe(''); // Should fail due to case sensitivity
+  });
+
+  it('should extract token from complex authorization header', () => {
+    const token =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
+    const req = mockRequest(`Bearer ${token}`);
+
+    const result = getBearerToken(req);
+    expect(result).toBe(token);
   });
 });

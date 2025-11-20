@@ -5,6 +5,7 @@ process.loadEnvFile();
 type Config = {
   api: APIConfig;
   db: DBConfig;
+  jwtSecret: string;
 };
 
 type DBConfig = {
@@ -26,6 +27,10 @@ if (!process.env.DB_URL) {
   throw new Error('DB_URL environment variable is not set');
 }
 
+if (!process.env.JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is not set');
+}
+
 export const config: Config = {
   api: {
     fileServerHits: 0,
@@ -36,4 +41,5 @@ export const config: Config = {
     dbURL: process.env.DB_URL,
     migrationConfig: migrationConfig,
   },
+  jwtSecret: process.env.JWT_SECRET,
 };
