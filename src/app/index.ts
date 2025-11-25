@@ -14,6 +14,8 @@ import {
   handlerChirp,
   handlerGetAllChirps,
   handlerGetChirpById,
+  handlerRefreshToken,
+  handlerRevokeToken,
 } from '../handler.js';
 import {
   middlewareErrorHandler,
@@ -124,6 +126,14 @@ app.post('/api/users', (req, res, next) => {
  */
 app.post('/api/login', (req, res, next) => {
   Promise.resolve(handlerLoginUser(req, res)).catch(next);
+});
+
+app.post('/api/refresh', (req, res, next) => {
+  Promise.resolve(handlerRefreshToken(req, res)).catch(next);
+});
+
+app.post('/api/revoke', (req, res, next) => {
+  Promise.resolve(handlerRevokeToken(req, res)).catch(next);
 });
 
 // ============================================================================

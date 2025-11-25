@@ -6,6 +6,7 @@ import {
   makeJWT,
   validateJWT,
   getBearerToken,
+  makeRefreshToken,
 } from './auth/auth.js';
 import {
   createUser,
@@ -17,6 +18,11 @@ import {
   getAllChirps,
   getChirpById,
 } from './db/queries/chirps.js';
+import {
+  createRefreshToken,
+  getRefreshTokenByToken,
+  revokeRefreshToken,
+} from './db/queries/refreshToken.js';
 
 // ============================================================================
 // HEALTH & MONITORING HANDLERS
@@ -229,9 +235,6 @@ export async function handlerLoginUser(req: Request, res: Response) {
       return;
     }
 
-    const actualExpiresInSeconds =
-      expiresInSeconds > 3600 ? 3600 : expiresInSeconds;
-
     const user = await getUserByEmail(email);
     if (!user) {
       res.status(401).json({ error: 'Invalid email or password' });
@@ -247,7 +250,15 @@ export async function handlerLoginUser(req: Request, res: Response) {
       return;
     }
 
-    const token = makeJWT(user.id, actualExpiresInSeconds, config.jwtSecret);
+    const token = makeJWT(user.id, expiresInSeconds, config.jwtSecret);
+    const refreshToken = makeRefreshToken();
+
+    await createRefreshToken({
+      token: refreshToken,
+      userId: user.id,
+      expiresAt: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000), // 60 days expiration
+      revokedAt: null,
+    });
 
     res.status(200).json({
       id: user.id,
@@ -255,9 +266,48 @@ export async function handlerLoginUser(req: Request, res: Response) {
       updatedAt: user.updatedAt,
       email: user.email,
       token: token,
+      refreshToken: refreshToken,
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ error: 'Failed to login user' });
   }
+}
+
+export async function handlerRefreshToken(req: Request, res: Response) {
+  const token = getBearerToken(req);
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const tokenData = await getRefreshTokenByToken(token);
+
+  if (!tokenData || tokenData.revokedAt || tokenData.expiresAt < new Date()) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const newJWT = makeJWT(tokenData.userId, 3600, config.jwtSecret);
+
+  res.status(200).json({ token: newJWT });
+}
+
+export async function handlerRevokeToken(req: Request, res: Response) {
+  const token = getBearerToken(req);
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const tokenData = await getRefreshTokenByToken(token);
+
+  if (!tokenData || tokenData.revokedAt || tokenData.expiresAt < new Date()) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  await revokeRefreshToken(token);
+
+  res.status(204).send();
 }
