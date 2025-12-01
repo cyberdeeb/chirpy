@@ -23,3 +23,15 @@ export async function getUserByEmail(email: string) {
     .limit(1);
   return user[0];
 }
+
+export async function updateUser(id: string, updatedFields: Partial<NewUser>) {
+  const [updatedUser] = await db
+    .update(users)
+    .set({
+      ...updatedFields,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, id))
+    .returning();
+  return updatedUser;
+}

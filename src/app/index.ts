@@ -8,12 +8,14 @@ import express from 'express';
 import {
   handlerCreateUser,
   handlerLoginUser,
+  handlerUpdateUser,
   handlerMetrics,
   handlerReadiness,
   handlerReset,
   handlerChirp,
   handlerGetAllChirps,
   handlerGetChirpById,
+  handlerDeleteChirpById,
   handlerRefreshToken,
   handlerRevokeToken,
 } from '../handler.js';
@@ -106,6 +108,10 @@ app.post('/api/chirps', (req, res, next) => {
   Promise.resolve(handlerChirp(req, res)).catch(next);
 });
 
+app.delete('/api/chirps/:id', (req, res, next) => {
+  Promise.resolve(handlerDeleteChirpById(req, res)).catch(next);
+});
+
 // ============================================================================
 // USER API ROUTES
 // ============================================================================
@@ -117,6 +123,10 @@ app.post('/api/chirps', (req, res, next) => {
  */
 app.post('/api/users', (req, res, next) => {
   Promise.resolve(handlerCreateUser(req, res)).catch(next);
+});
+
+app.put('/api/users', (req, res, next) => {
+  Promise.resolve(handlerUpdateUser(req, res)).catch(next);
 });
 
 /**

@@ -12,9 +12,11 @@ import {
   createUser,
   deleteAllUsers,
   getUserByEmail,
+  updateUser,
 } from './db/queries/users.js';
 import {
   createChirp,
+  deleteChirpById,
   getAllChirps,
   getChirpById,
 } from './db/queries/chirps.js';
@@ -23,6 +25,7 @@ import {
   getRefreshTokenByToken,
   revokeRefreshToken,
 } from './db/queries/refreshToken.js';
+import { get } from 'http';
 
 // ============================================================================
 // HEALTH & MONITORING HANDLERS
@@ -171,6 +174,35 @@ export async function handlerGetChirpById(req: Request, res: Response) {
   res.status(200).json(chirp);
 }
 
+export async function handlerDeleteChirpById(req: Request, res: Response) {
+  const token = getBearerToken(req);
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const decoded = validateJWT(token, config.jwtSecret);
+  if (!decoded) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const userId = decoded.sub!;
+  const { id } = req.params;
+
+  const deletedChirp = await getChirpById(id);
+
+  if (!deletedChirp) {
+    res.status(404).json({ error: 'Chirp not found' });
+    return;
+  }
+  if (deletedChirp.userId !== userId) {
+    res.status(403).json({ error: "Forbidden - cannot delete others' chirps" });
+    return;
+  }
+  await deleteChirpById(id);
+  res.status(204).json(deletedChirp);
+}
 // ============================================================================
 // USER HANDLERS
 // ============================================================================
@@ -310,4 +342,50 @@ export async function handlerRevokeToken(req: Request, res: Response) {
   await revokeRefreshToken(token);
 
   res.status(204).send();
+}
+
+export async function handlerUpdateUser(req: Request, res: Response) {
+  const token = getBearerToken(req);
+  if (!token) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const decoded = validateJWT(token, config.jwtSecret);
+  if (!decoded) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  const userId = decoded.sub!;
+
+  const { email, password } = req.body;
+
+  if (!email && !password) {
+    res
+      .status(400)
+      .json({ error: 'At least one of email or password must be provided' });
+    return;
+  }
+
+  const updatedFields: any = {};
+  if (email) {
+    updatedFields.email = email;
+  }
+  if (password) {
+    updatedFields.hashedPassword = await hashPassword(password);
+  }
+
+  try {
+    const updatedUser = await updateUser(userId, updatedFields);
+    res.status(200).json({
+      id: updatedUser.id,
+      createdAt: updatedUser.createdAt,
+      updatedAt: updatedUser.updatedAt,
+      email: updatedUser.email,
+    });
+  } catch (error) {
+    console.error('User update error:', error);
+    res.status(500).json({ error: 'Failed to update user' });
+  }
 }
