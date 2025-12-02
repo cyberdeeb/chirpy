@@ -9,6 +9,7 @@ import {
   handlerCreateUser,
   handlerLoginUser,
   handlerUpdateUser,
+  handlerUpgradeUserToChirpyRed,
   handlerMetrics,
   handlerReadiness,
   handlerReset,
@@ -101,13 +102,20 @@ app.get('/api/chirps/:id', (req, res, next) => {
 
 /**
  * POST /api/chirps - Create a new chirp
- * Body: { body: string, userId: string }
+ * Auth: JWT Bearer token required (user ID extracted from token)
+ * Body: { body: string } - Max 140 characters
  * Returns: 201 Created with chirp object (includes profanity filtering)
  */
 app.post('/api/chirps', (req, res, next) => {
   Promise.resolve(handlerChirp(req, res)).catch(next);
 });
 
+/**
+ * DELETE /api/chirps/:id - Delete a specific chirp
+ * Auth: JWT Bearer token required + ownership validation
+ * Params: { id: string } - UUID of the chirp to delete
+ * Returns: 204 No Content on success, 403 if not owner, 404 if not found
+ */
 app.delete('/api/chirps/:id', (req, res, next) => {
   Promise.resolve(handlerDeleteChirpById(req, res)).catch(next);
 });
@@ -118,32 +126,58 @@ app.delete('/api/chirps/:id', (req, res, next) => {
 
 /**
  * POST /api/users - Create a new user account
- * Body: { email: string }
- * Returns: 201 Created with user object
+ * Body: { email: string, password: string }
+ * Returns: 201 Created with user object (password hashed with Argon2)
  */
 app.post('/api/users', (req, res, next) => {
   Promise.resolve(handlerCreateUser(req, res)).catch(next);
 });
 
+/**
+ * PUT /api/users - Update user profile information
+ * Auth: JWT Bearer token required
+ * Body: { email?: string, password?: string } - At least one field required
+ * Returns: 200 OK with updated user object (excluding password)
+ */
 app.put('/api/users', (req, res, next) => {
   Promise.resolve(handlerUpdateUser(req, res)).catch(next);
 });
 
 /**
  * POST /api/login - Authenticate user login
- * Body: { email: string, password: string }
- * Returns: 200 OK with user object, or 401 Unauthorized
+ * Body: { email: string, password: string, expiresInSeconds?: number }
+ * Returns: 200 OK with user object + JWT token + refresh token, or 401 Unauthorized
  */
 app.post('/api/login', (req, res, next) => {
   Promise.resolve(handlerLoginUser(req, res)).catch(next);
 });
 
+/**
+ * POST /api/refresh - Refresh JWT access token
+ * Auth: Valid refresh token in Authorization Bearer header
+ * Returns: 200 OK with new JWT access token (1-hour expiration)
+ */
 app.post('/api/refresh', (req, res, next) => {
   Promise.resolve(handlerRefreshToken(req, res)).catch(next);
 });
 
+/**
+ * POST /api/revoke - Revoke a refresh token
+ * Auth: Valid refresh token in Authorization Bearer header
+ * Returns: 204 No Content on successful revocation
+ */
 app.post('/api/revoke', (req, res, next) => {
   Promise.resolve(handlerRevokeToken(req, res)).catch(next);
+});
+
+/**
+ * POST /api/polka/webhooks - Webhook for user upgrades
+ * Body: { event: string, data: { userId: string } }
+ * Processes 'user.upgraded' events to grant Chirpy Red status
+ * Returns: 204 No Content (webhook acknowledgment)
+ */
+app.post('/api/polka/webhooks', (req, res, next) => {
+  Promise.resolve(handlerUpgradeUserToChirpyRed(req, res)).catch(next);
 });
 
 // ============================================================================

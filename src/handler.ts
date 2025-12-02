@@ -13,6 +13,7 @@ import {
   deleteAllUsers,
   getUserByEmail,
   updateUser,
+  upgradeUserToChirpyRed,
 } from './db/queries/users.js';
 import {
   createChirp,
@@ -174,6 +175,14 @@ export async function handlerGetChirpById(req: Request, res: Response) {
   res.status(200).json(chirp);
 }
 
+/**
+ * Delete a specific chirp by its ID with JWT authentication and ownership validation
+ * - Requires valid JWT bearer token in Authorization header
+ * - Extracts user ID from validated JWT token for ownership verification
+ * - Verifies the chirp exists and belongs to the authenticated user
+ * - Deletes the chirp from database if ownership is confirmed
+ * - Returns 204 No Content on success, 404 if not found, 403 if not owner
+ */
 export async function handlerDeleteChirpById(req: Request, res: Response) {
   const token = getBearerToken(req);
   if (!token) {
@@ -242,11 +251,40 @@ export async function handlerCreateUser(req: Request, res: Response) {
       createdAt: newUser.createdAt,
       updatedAt: newUser.updatedAt,
       email: newUser.email,
+      isChirpyRed: newUser.isChirpyRed,
     });
   } catch (error) {
     console.error('User creation error:', error);
     res.status(500).json({ error: 'Failed to create user' });
   }
+}
+
+/**
+ * Webhook handler for upgrading user to Chirpy Red premium status
+ * - Processes webhook events for user upgrades
+ * - Validates event type is 'user.upgraded'
+ * - Updates user's isChirpyRed status in database
+ * - Returns 204 No Content for all cases (webhook acknowledgment)
+ */
+export async function handlerUpgradeUserToChirpyRed(
+  req: Request,
+  res: Response
+) {
+  const { event, data } = req.body;
+  if (event !== 'user.upgraded') {
+    res.status(204).send();
+    return;
+  }
+
+  const userId = data.userId;
+
+  const updatedUser = await upgradeUserToChirpyRed(userId);
+  if (!updatedUser) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  res.status(204).send();
 }
 
 /**
@@ -297,6 +335,7 @@ export async function handlerLoginUser(req: Request, res: Response) {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
       email: user.email,
+      isChirpyRed: user.isChirpyRed,
       token: token,
       refreshToken: refreshToken,
     });
@@ -306,6 +345,14 @@ export async function handlerLoginUser(req: Request, res: Response) {
   }
 }
 
+/**
+ * Refresh JWT access token using valid refresh token
+ * - Validates refresh token from Authorization header
+ * - Checks token exists, hasn't been revoked, and hasn't expired
+ * - Generates new JWT access token with 1-hour expiration
+ * - Returns new access token for continued API access
+ * - Maintains security by not extending refresh token lifetime
+ */
 export async function handlerRefreshToken(req: Request, res: Response) {
   const token = getBearerToken(req);
   if (!token) {
@@ -325,6 +372,14 @@ export async function handlerRefreshToken(req: Request, res: Response) {
   res.status(200).json({ token: newJWT });
 }
 
+/**
+ * Revoke a refresh token to prevent further use
+ * - Validates refresh token from Authorization header
+ * - Checks token exists and hasn't already been revoked
+ * - Marks token as revoked in database with timestamp
+ * - Prevents future refresh attempts with this token
+ * - Returns 204 No Content on successful revocation
+ */
 export async function handlerRevokeToken(req: Request, res: Response) {
   const token = getBearerToken(req);
   if (!token) {
@@ -344,6 +399,15 @@ export async function handlerRevokeToken(req: Request, res: Response) {
   res.status(204).send();
 }
 
+/**
+ * Update authenticated user's profile information
+ * - Requires valid JWT bearer token in Authorization header
+ * - Allows updating email and/or password (at least one required)
+ * - Re-hashes password using Argon2 if password is provided
+ * - Updates user record in database with new information
+ * - Returns updated user object (excluding password)
+ * - Validates JWT token and extracts user ID for security
+ */
 export async function handlerUpdateUser(req: Request, res: Response) {
   const token = getBearerToken(req);
   if (!token) {
@@ -383,6 +447,7 @@ export async function handlerUpdateUser(req: Request, res: Response) {
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
       email: updatedUser.email,
+      isChirpyRed: updatedUser.isChirpyRed,
     });
   } catch (error) {
     console.error('User update error:', error);

@@ -29,6 +29,13 @@
       "when": 1764016580144,
       "tag": "0003_yellow_khan",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1764712564389,
+      "tag": "0004_solid_mentor",
+      "breakpoints": true
     }
   ]
 }
