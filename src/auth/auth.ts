@@ -59,3 +59,17 @@ export function getBearerToken(req: Request): string {
 export function makeRefreshToken(): string {
   return crypto.randomBytes(32).toString('hex');
 }
+
+export function getPolkaKey(req: Request): string {
+  const authHeader = req.get('Authorization');
+  if (!authHeader) {
+    return '';
+  }
+
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'ApiKey') {
+    return '';
+  }
+
+  return parts[1];
+}

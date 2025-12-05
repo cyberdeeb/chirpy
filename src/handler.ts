@@ -7,6 +7,7 @@ import {
   validateJWT,
   getBearerToken,
   makeRefreshToken,
+  getPolkaKey,
 } from './auth/auth.js';
 import {
   createUser,
@@ -270,6 +271,14 @@ export async function handlerUpgradeUserToChirpyRed(
   req: Request,
   res: Response
 ) {
+  const apiKey = getPolkaKey(req);
+  const polkaKey = process.env.POLKA_KEY;
+
+  if (apiKey !== polkaKey || !apiKey) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
   const { event, data } = req.body;
   if (event !== 'user.upgraded') {
     res.status(204).send();
