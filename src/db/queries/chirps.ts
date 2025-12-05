@@ -1,14 +1,21 @@
 import { db } from '../index.js';
 import { chirps, NewChirp } from '../schema.js';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, asc, desc } from 'drizzle-orm';
 
 export async function createChirp(chirp: NewChirp) {
   const [newChirp] = await db.insert(chirps).values(chirp).returning();
   return newChirp;
 }
 
-export async function getAllChirps() {
-  return await db.select().from(chirps).orderBy(chirps.createdAt);
+export async function getAllChirps(
+  authorId?: string,
+  sort: 'asc' | 'desc' = 'asc'
+) {
+  return await db
+    .select()
+    .from(chirps)
+    .where(authorId ? eq(chirps.userId, authorId) : undefined)
+    .orderBy(sort === 'asc' ? asc(chirps.createdAt) : desc(chirps.createdAt));
 }
 
 export async function getChirpById(id: string) {

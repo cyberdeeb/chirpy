@@ -157,7 +157,18 @@ export async function handlerChirp(req: Request, res: Response) {
  * Returns array of all chirp objects
  */
 export async function handlerGetAllChirps(req: Request, res: Response) {
-  const chirps = await getAllChirps();
+  let { authorId, sort } = req.query;
+  if (typeof authorId !== 'string') {
+    authorId = undefined;
+  }
+
+  // Validate and type-check sort parameter
+  let sortOrder: 'asc' | 'desc' = 'asc'; // Default to 'asc'
+  if (typeof sort === 'string' && (sort === 'asc' || sort === 'desc')) {
+    sortOrder = sort;
+  }
+
+  const chirps = await getAllChirps(authorId as string | undefined, sortOrder);
   res.status(200).json(chirps);
 }
 
