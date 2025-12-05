@@ -155,6 +155,7 @@ export async function handlerChirp(req: Request, res: Response) {
 /**
  * Retrieve all chirps from database
  * Returns array of all chirp objects
+ * Supports optional filtering by authorId and sorting order
  */
 export async function handlerGetAllChirps(req: Request, res: Response) {
   let { authorId, sort } = req.query;
